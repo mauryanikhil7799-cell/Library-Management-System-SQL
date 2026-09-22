@@ -1,0 +1,227 @@
+--- SQL PROJECT - LIBRARY MANAGEMENT SYSTEM ADVANCE ---
+
+USE Library_Management_System_Projet;
+GO
+
+
+--- INSERTING NEW DATA FOR ADVANCE ANALYSIS ---
+--- INSERT ONLY IF THE RECORD DOES NOT ALREADY EXIST ---
+
+IF NOT EXISTS (
+    SELECT 1
+    FROM Issued_Stauts
+    WHERE issued_id = 'IS151'
+)
+BEGIN
+    INSERT INTO Issued_Stauts
+    (issued_id, issued_member_id, issued_book_name, issued_date, issued_book_isbn, issued_emp_id)
+    VALUES
+    ('IS151', 'C118', 'The Catcher in the Rye',
+     DATEADD(DAY, -24, CAST(GETDATE() AS DATE)),
+     '978-0-553-29698-2', 'E108');
+END;
+
+
+IF NOT EXISTS (
+    SELECT 1
+    FROM Issued_Stauts
+    WHERE issued_id = 'IS152'
+)
+BEGIN
+    INSERT INTO Issued_Stauts
+    (issued_id, issued_member_id, issued_book_name, issued_date, issued_book_isbn, issued_emp_id)
+    VALUES
+    ('IS152', 'C119', 'The Catcher in the Rye',
+     DATEADD(DAY, -13, CAST(GETDATE() AS DATE)),
+     '978-0-553-29698-2', 'E109');
+END;
+
+
+IF NOT EXISTS (
+    SELECT 1
+    FROM Issued_Stauts
+    WHERE issued_id = 'IS153'
+)
+BEGIN
+    INSERT INTO Issued_Stauts
+    (issued_id, issued_member_id, issued_book_name, issued_date, issued_book_isbn, issued_emp_id)
+    VALUES
+    ('IS153', 'C106', 'Pride and Prejudice',
+     DATEADD(DAY, -7, CAST(GETDATE() AS DATE)),
+     '978-0-14-143951-8', 'E107');
+END;
+
+
+IF NOT EXISTS (
+    SELECT 1
+    FROM Issued_Stauts
+    WHERE issued_id = 'IS154'
+)
+BEGIN
+    INSERT INTO Issued_Stauts
+    (issued_id, issued_member_id, issued_book_name, issued_date, issued_book_isbn, issued_emp_id)
+    VALUES
+    ('IS154', 'C105', 'The Road',
+     DATEADD(DAY, -32, CAST(GETDATE() AS DATE)),
+     '978-0-375-50167-0', 'E101');
+END;
+
+
+--- ADD BOOK QUALITY COLUMN ONLY IF IT DOES NOT EXIST ---
+
+IF NOT EXISTS (
+    SELECT 1
+    FROM INFORMATION_SCHEMA.COLUMNS
+    WHERE TABLE_NAME = 'Return_Status'
+      AND COLUMN_NAME = 'book_quality'
+)
+BEGIN
+    ALTER TABLE Return_Status
+    ADD book_quality VARCHAR(15) DEFAULT 'Good';
+END;
+
+GO
+
+
+--- UPDATE BOOK QUALITY ---
+
+UPDATE Return_Status
+SET book_quality =
+    CASE 
+        WHEN issued_id IN ('IS112', 'IS117', 'IS118') THEN 'Damaged'
+        ELSE 'Good'
+END;
+ 
+
+
+--- CHECK RETURN STATUS ---
+
+SELECT *
+FROM Return_Status;
+
+
+--- CHECK NEWLY INSERTED ISSUED BOOKS ---
+
+SELECT *
+FROM Issued_Stauts
+WHERE issued_id IN ('IS151', 'IS152', 'IS153', 'IS154');
+
+---SQL PROJECT-LIBRARY MANAGEMENT SYSTEM
+--- DATA CHECKING OF EXISTING DATA ---
+
+SELECT * FROM Books;
+SELECT * FROM Branch;
+SELECT * FROM Employees;
+SELECT * FROM Members;
+SELECT * FROM Issued_Stauts;
+SELECT * FROM Return_Status;
+
+--- Task-1 Identify Members with overdue Books---
+--- write a query to identify members who have overdue(Assume 30 days return period)---
+---Display the Members_id,Member's name, book title,Issue_Date,book title---
+SELECT 
+i.issued_member_id,
+m.member_name,
+i.issued_book_name,
+r.return_date,
+i.issued_date,
+DATEDIFF(DAY,i.issued_date,GETDATE()) AS Overdue_days,
+CASE 
+    WHEN r.return_date IS NULL AND 
+    DATEADD(DAY,30, i.issued_date)<GETDATE()
+    THEN 'Overdue'
+    ELSE 'Retrun'
+End AS Status,
+DATEDIFF(DAY,i.issued_date,GETDATE())*2 AS Fine
+FROM Issued_Stauts AS i
+LEFT JOIN Return_Status AS r
+ON i.issued_id=r.issued_id
+LEFT JOIN Members AS m
+ON i.issued_member_id=m.member_id
+WHERE r.return_date IS NULL and DATEDIFF(DAY,i.issued_date,GETDATE())>30
+
+---Task-14 Update Books status on Return---
+----Write a query to update the ststus of books in the books table to "Yes" when they are returned (Based on the entry in the return_Status Table)----
+SELECT* FROM Issued_Stauts
+WHERE issued_book_isbn='978-0-451-52994-2'
+
+SELECT* FROM Books
+WHERE isbn='978-0-451-52994-2'
+
+UPDATE Books
+SET status ='yes'
+WHERE isbn ='978-0-451-52994-2';
+
+INSERT INTO Return_Status(return_id,issued_id,return_book_name,return_date,return_book_isbn,book_quality)
+VALUES('RS125','IS130','Moby Dick','2026-09-21','978-0-451-52994-2','Good')
+
+
+SELECT * FROM Return_Status
+WHERE issued_id='IS130';
+
+-- Store Procedure
+CREATE OR ALTER PROCEDURE ADD_Return_records
+    @p_return_id VARCHAR(50),
+    @p_issued_id VARCHAR(50),
+    @p_return_book_name VARCHAR(50),
+    @p_return_date date,
+    @p_return_book_isbn VARCHAR(50),
+    @p_book_quality VARCHAR(50)
+AS
+BEGIN
+
+    -- Inserting into Return_Status based on user's input
+    INSERT INTO Return_Status
+    (
+        return_id,
+        issued_id,
+        return_book_name,
+        return_date,
+        return_book_isbn,
+        book_quality
+    )
+    VALUES
+    (
+        @p_return_id,
+        @p_issued_id,
+        @p_return_book_name,
+        @p_return_date,
+        @p_return_book_isbn,
+        @p_book_quality
+    );
+
+    -- Getting ISBN and Book name for the update
+    DECLARE @v_isbn VARCHAR(50);
+    DECLARE @v_book VARCHAR(50);
+
+    SELECT
+        @v_isbn = issued_book_isbn,
+        @v_book = issued_book_name
+    FROM Issued_Stauts
+    WHERE issued_id = @p_issued_id;
+
+    -- Updating book status
+    UPDATE Books
+    SET status = 'yes'
+    WHERE isbn = @v_isbn;
+
+    -- Message
+    PRINT 'Thank you for returning the Book: ' + @v_book;
+
+END;
+
+EXEC ADD_Return_records
+    @p_return_id = 'RS126',
+    @p_issued_id = 'IS131',
+    @p_return_book_name = 'Moby Dick',
+    @p_return_date = '2026-09-22',
+    @p_return_book_isbn = '978-0-451-52994-2',
+    @p_book_quality = 'Good';
+
+
+/* Task-15
+ --- Branch Perfomance Report---
+ ---- Create a query that generate a performance report for each branch, showing the number of books issued,the number of books returned, and the Total number of
+Revenue genrated from book rentals
+*/
+
