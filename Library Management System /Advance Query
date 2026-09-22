@@ -242,4 +242,12 @@ LEFT JOIN Books AS bo
 ON i.issued_book_isbn=bo.isbn
 GROUP BY b.branch_id,manager_id
 
-
+/* Craete a tble of cative Memebers 
+--- Write an query to create a table of the active members who have issued atleast one books in the last 6 months.---
+*/
+SELECT *
+INTO Active_Members
+FROM Members AS m
+LEFT JOIN Issued_Stauts as i
+ON i.issued_member_id=m.member_id
+where i.issued_date>= DATEADD(MONTH,-6,GETDATE())
