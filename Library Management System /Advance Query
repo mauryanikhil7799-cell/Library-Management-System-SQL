@@ -224,4 +224,22 @@ EXEC ADD_Return_records
  ---- Create a query that generate a performance report for each branch, showing the number of books issued,the number of books returned, and the Total number of
 Revenue genrated from book rentals
 */
+SELECT
+b.branch_id,
+b.manager_id,
+COUNT(i.issued_id) AS books_issued,
+COUNT(r.issued_id) AS book_return,
+SUM(bo.rental_price) AS Total_Rental_Income
+INTO Branch_Perfomance_Report
+FROM Branch AS b
+JOIN Employees AS e
+ON b.branch_id=e.branch_id
+LEFT JOIN Issued_Stauts AS i
+ON e.emp_id =i.issued_emp_id
+LEFT JOIN Return_Status AS r
+ON r.issued_id=i.issued_id
+LEFT JOIN Books AS bo
+ON i.issued_book_isbn=bo.isbn
+GROUP BY b.branch_id,manager_id
+
 
