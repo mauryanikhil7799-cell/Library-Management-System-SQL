@@ -242,7 +242,7 @@ LEFT JOIN Books AS bo
 ON i.issued_book_isbn=bo.isbn
 GROUP BY b.branch_id,manager_id
 
-/* Craete a tble of cative Memebers 
+/* Craete a tble of active Memebers 
 --- Write an query to create a table of the active members who have issued atleast one books in the last 6 months.---
 */
 SELECT *
@@ -251,3 +251,84 @@ FROM Members AS m
 LEFT JOIN Issued_Stauts as i
 ON i.issued_member_id=m.member_id
 where i.issued_date>= DATEADD(MONTH,-6,GETDATE())
+
+/* FIND THE EMPLOYEES WITH THE MOST BOOK ISSUED PROCESSED
+--- Write a query to find top 3 Employee who have processed the most books issued. Display Employee name, No of book processed and thier Branch---*/
+
+SELECT TOP 3
+e.emp_name AS Employee_Name ,
+b.branch_id AS Branch,
+COUNT(i.issued_book_name) AS Book_processed
+FROM Employees AS E
+LEFT JOIN Issued_Stauts AS i
+ON e.emp_id=i.issued_emp_id
+LEFT JOIN Branch AS b
+ON b.branch_id=E.branch_id
+GROUP BY E.emp_name,b.branch_id
+ORDER BY COUNT(i.issued_book_name) DESC
+
+/* Stored procedure Objective:
+
+--- Create a stores procedure to manage the status of books in the library system.---
+
+--- Description: Write an stored procedure that updates the ststus of a book inthe library based on its issurance:
+
+---	the procedure should function like this:
+
+--- The store procedure should take the issued_id as the input Perameter.
+
+--- The procedure should first check if the book available (Status=Yes).
+
+--- If the book avilable,it should be issued, and the status of the book,should be updated to No.
+
+---	If the status of the not available (Status=No), the Proceudre should return an error msg indicaring that the book is not available
+
+*/
+DROP PROCEDURE IF EXISTS Update_Book_Status;
+GO
+
+CREATE PROCEDURE Update_Book_Status
+    @issued_id VARCHAR(20)
+AS
+BEGIN
+    SET NOCOUNT ON;
+
+    DECLARE @ISBN VARCHAR(20);
+    DECLARE @Status VARCHAR(20);
+
+    -- Get the ISBN of the book being issued
+    SELECT @ISBN = Issued_book_isbn
+    FROM Issued_Stauts
+    WHERE issued_id = @issued_id;
+
+    -- Check whether issued_id exists
+    IF @ISBN IS NULL
+    BEGIN
+        RAISERROR('Invalid Issued ID. No Book found.', 16, 1);
+        RETURN;
+    END;
+
+    -- Get the current book status
+    SELECT @Status = status
+    FROM Books
+    WHERE isbn = @ISBN;
+
+    -- Check whether book is available
+    IF @Status = 'No'
+    BEGIN
+        RAISERROR('Book is not available.', 16, 1);
+        RETURN;
+    END;
+
+    -- If book is available, update status
+    IF @Status = 'Yes'
+    BEGIN
+        UPDATE Books
+        SET status = 'No'
+        WHERE isbn = @ISBN;
+
+        PRINT 'Book issued successfully.';
+    END;
+
+END;
+GO
