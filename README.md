@@ -48,5 +48,4 @@ I am building my career in SQL and Data Analytics, with a focus on **Microsoft S
 
 ### 📫 Connect with me
 
-LinkedIn: [Add your LinkedIn profile]
-Tableau: [Add your Tableau profile]
+Mailid: Mauryanikhil7788@gmail.com
